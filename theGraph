@@ -1,0 +1,144 @@
+{
+ tokenDayDatas(orderBy: date, orderDirection: desc, first: 200, skip: 50
+  where: {
+    token: "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984"
+  }
+ ) {
+    id
+    date
+    priceUSD
+    totalLiquidityToken
+    totalLiquidityUSD
+    totalLiquidityETH
+    dailyVolumeETH
+    dailyVolumeToken
+    dailyVolumeUSD
+ }
+}
+
+
+
+# 获取最近一段时间交易volume最多的top tokens
+
+以最近7天交易量为例，先查询7天前对应时间点的eth block number（ 比如现在现在的区块高度是12120630, 7天前的区块高度约为12120630 - 6500 * 7），使用该区块高度获取到对应时间点token的累积交易量
+
+
+{
+  tokens (orderBy: tradeVolumeUSD, orderDirection: desc, first: 100, block: {number: 12075130}) {
+    symbol 
+    tradeVolumeUSD
+    txCount
+  }
+  
+}
+
+得到结果：
+
+
+  "data": {
+    "tokens": [
+      {
+        "symbol": "WETH",
+        "tradeVolumeUSD": "114416672998.740933740968853883697",
+        "txCount": "32024453"
+      },
+      {
+        "symbol": "USDC",
+        "tradeVolumeUSD": "21234786651.10620225148998424930387",
+        "txCount": "3103611"
+      },
+      {
+        "symbol": "USDT",
+        "tradeVolumeUSD": "17652090965.6649693147081994119114",
+        "txCount": "3439051"
+      },
+      {
+        "symbol": "DAI",
+        "tradeVolumeUSD": "12068618765.91484104328387216787208",
+        "txCount": "1783604"
+      },
+      {
+        "symbol": "WBTC",
+        "tradeVolumeUSD": "5802373799.585394656230666016653134",
+        "txCount": "475764"
+      }
+    ]
+  }
+}
+
+再查询当前区块对应token的累积交易量
+
+
+{
+  tokens (orderBy: tradeVolumeUSD, orderDirection: desc, first: 100) {
+    symbol 
+    tradeVolumeUSD
+    txCount
+  }
+  
+}
+
+得到结果
+
+{
+  "data": {
+    "tokens": [
+      {
+        "symbol": "WETH",
+        "tradeVolumeUSD": "121339255296.4811794292426388805482",
+        "txCount": "33166478"
+      },
+      {
+        "symbol": "USDC",
+        "tradeVolumeUSD": "22243820611.5065205451546261852268",
+        "txCount": "3202304"
+      },
+      {
+        "symbol": "USDT",
+        "tradeVolumeUSD": "18502061971.04951272108201968117389",
+        "txCount": "3541875"
+      },
+      {
+        "symbol": "DAI",
+        "tradeVolumeUSD": "12340866711.1669306605236625156328",
+        "txCount": "1808946"
+      },
+      {
+        "symbol": "WBTC",
+        "tradeVolumeUSD": "5939600331.771455053826434343416439",
+        "txCount": "487837"
+      }
+    ]
+  }
+}
+
+然后统计每个token对应过去7天的交易量差值，计算差值后排序得到最近7天滚动交易量排行
+
+
+# 获取token对应交易user信息
+
+目前现成的接口不知道直接查询交易token/pair的用户的账号个数，可以通过定时、多次抓取相关token/pair的交易记录，监控交易情况，手动提取用户账号，去重，做统计；
+
+比如以ETH/USDT pair为例子，查询最近1000条的方式如下，可以统计结果里to 字段对应address去重数量，统计最近1000笔交易里参与该交易对交易的账号数
+
+{
+swaps(orderBy: timestamp, orderDirection: desc, first: 1000 where:
+ { pair: "0x0d4a11d5eeaac28ec3f61d100daf4d40471f1852" }
+) {
+     pair {
+       token0 {
+         symbol
+       }
+       token1 {
+         symbol
+       }
+     }
+     amount0In
+     amount0Out
+     amount1In
+     amount1Out
+     amountUSD
+     to
+     sender 
+ }
+}
